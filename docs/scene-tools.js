@@ -14,7 +14,7 @@ export function pickSurface(scene,camera,x,y,allowGhosts=false){
  return ray.intersectObjects(scene.children,true).find(hit=>hit.object.isMesh&&isVisible(hit.object)&&!flagged(hit.object,'toolOverlay')&&(!flagged(hit.object,'treeGhost')||allowGhosts))??null;
 }
 
-export function createSceneTools({scene,canvas,viewport,trees,getCamera,getLabelsVisible,activate,onTreesLayer,onModeChange=()=>{},invalidateShadows=()=>{}}){
+export function createSceneTools({scene,canvas,viewport,trees,getCamera,getLabelsVisible,activate,onTreesLayer,onModeChange=()=>{},onVisibilityChange=()=>{},invalidateShadows=()=>{}}){
  const $=s=>document.querySelector(s),overlay=new THREE.Group();overlay.userData.toolOverlay=true;scene.add(overlay);
  const marks=new THREE.Group();overlay.add(marks);
  const ghosts=new THREE.Group();scene.add(ghosts);
@@ -42,7 +42,7 @@ export function createSceneTools({scene,canvas,viewport,trees,getCamera,getLabel
   update();
  }
  function setMode(value){if(!['navigate','measure','trees'].includes(value))throw new Error('Unknown scene tool');mode=value;taps.reset();onModeChange(value);if(value!=='navigate')activate();if(value==='trees')onTreesLayer();sync();}
- function setTreeVisible(id,visible){const tree=treeById.get(id);if(!tree||typeof visible!=='boolean')throw new Error('Invalid tree visibility');tree.group.visible=visible;selected=id;sync();}
+ function setTreeVisible(id,visible){const tree=treeById.get(id);if(!tree||typeof visible!=='boolean')throw new Error('Invalid tree visibility');tree.group.visible=visible;selected=id;sync();onVisibilityChange();}
  function selectTree(id){if(id!==null&&!treeById.has(id))throw new Error('Unknown tree');selected=id;sync();}
  function clear(){points=[];rebuild();}
  function undo(){points.pop();rebuild();}
@@ -64,7 +64,7 @@ export function createSceneTools({scene,canvas,viewport,trees,getCamera,getLabel
  $('#measure-clear').onclick=clear;$('#measure-undo').onclick=undo;
  selector.onchange=()=>selectTree(selector.value||null);
  $('#tree-enabled').onchange=e=>{if(selected)setTreeVisible(selected,e.target.checked);};
- $('#trees-restore').onclick=()=>{for(const tree of trees)tree.group.visible=true;sync();};
+ $('#trees-restore').onclick=()=>{for(const tree of trees)tree.group.visible=true;sync();onVisibilityChange();};
  function update(){
   const parentVisible=trees[0]?.group.parent.visible??false;
   ghosts.visible=mode==='trees'&&parentVisible;for(const tree of trees)tree.ghost.visible=!tree.group.visible;

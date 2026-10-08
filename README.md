@@ -7,7 +7,8 @@ A browser-based Three.js property viewer and backyard garage planner. Works with
 - Garage area and distance to the house, in feet.
 - Driveway routing to a rear alley and removable fence panels.
 - Two-point measurements, layer controls, and individual tree visibility.
-- Save and load garage designs as JSON files.
+- Automatically save and restore the current garage design on the same browser.
+- Export and load garage designs as JSON files for backups and other devices.
 
 ## Run locally
 
@@ -25,7 +26,7 @@ A personal GitHub account needs an eligible paid plan to publish Pages from a pr
 
 This clean snapshot excludes the original report, photographs, street and owner identifiers, local network configuration, hosting metadata, and the original Git history. The model's relative geometry and dimensions are retained, and are readable wherever the website is published. It is a planning visualization, not a construction document or a verified permit check. The 10 ft spacing indicator is a planning target.
 
-Design edits remain in the browser session until exported. This version does not include an account service, analytics, cloud uploads, or server-side storage. Source files do not contain access credentials.
+Completed edits save automatically in browser local storage, including dimensions, placement, doors, windows, roof, driveway, removed fence panels, and display settings. Reopening this site in the same browser restores them. Incomplete drawings do not replace the last saved design; removing a garage also updates the save. Browser storage does not sync between devices and can be cleared by browser settings or private browsing. Use **Export design** for a durable backup or to transfer a design with **Load design**. A visible status reports when browser saving is unavailable. This version does not include an account service, analytics, cloud uploads, or server-side storage. Source files do not contain access credentials.
 
 ## Controls
 

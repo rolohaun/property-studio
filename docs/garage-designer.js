@@ -1,3 +1,4 @@
+import {createDesignStore} from './design-storage.js';
 import {createTapTracker} from './pointer-gestures.js';
 import * as THREE from './vendor/three.module.js';
 import {pickSurface} from './scene-tools.js';
@@ -12,10 +13,12 @@ const openingId=()=>globalThis.crypto.randomUUID?.()??Array.from(globalThis.cryp
 export function createGarageDesigner(ctx){
  const {scene,canvas,viewport,world,getCamera,activate,focusPlan,focusGarage,setCapture,trees,getLayer,setLayer,getLabelsVisible,setLabels}=ctx;
  const $=s=>document.querySelector(s);let s=newDesign(),editing=false,fenceEditing=false,phase='idle',selectedWall='front',selectedOpening=null,slide=null,backup=null,message='Pick a fence, set your setback, then draw a rectangle.';
+ const store=createDesignStore();
+ const restored=store.initialize(s,ctx.getDisplay());s=restored.design;ctx.restoreDisplay(restored.display);
  const taps=createTapTracker();
  const view=createGarageView(ctx),panel=$('#garage-designer');
  panel.innerHTML=`<div class="designer-heading"><div><span class="eyebrow">BACKYARD PLANNER</span><h2>Design your garage</h2></div><button id="garage-close" aria-label="Close garage designer">×</button></div>
- <p class="designer-intro">Snap to a fence, draw a footprint, then add openings.</p><div class="designer-display"><label><input id="designer-trees" type="checkbox">Trees</label><label><input id="designer-shed" type="checkbox">Shed</label><label><input id="designer-roof" type="checkbox">Roof</label><label><input id="designer-labels" type="checkbox">Labels</label></div>
+ <p class="designer-intro">Snap to a fence, draw a footprint, then add openings.</p><p id="garage-autosave" class="autosave-status" role="status" aria-live="polite"></p><p class="field-help">Autosave stays on this browser. Export a file for a backup or another device.</p><div class="designer-display"><label><input id="designer-trees" type="checkbox">Trees</label><label><input id="designer-shed" type="checkbox">Shed</label><label><input id="designer-roof" type="checkbox">Roof</label><label><input id="designer-labels" type="checkbox">Labels</label></div>
  <div id="garage-metrics" class="garage-metrics" aria-live="polite">
  <div><span>Garage footprint</span><output id="design-garage-area">—</output><small>Exterior area · loft excluded</small></div>
  <div><span>Nearest corner → south wall</span><output id="design-house-clearance">—</output><small id="design-corner-detail">Place a garage to measure.</small></div>
@@ -47,9 +50,15 @@ export function createGarageDesigner(ctx){
  <p id="driveway-status" class="field-help" role="status"></p>
  <div class="designer-actions"><button id="fence-edit" aria-pressed="false">Edit rear fence panels</button><button id="fence-restore">Restore all panels</button></div>
  <p class="field-help">In fence editing, tap a panel or its ground marker to remove or restore it. Amber = removed. Blue = retained.</p>
- </section><section><h3>Design summary</h3><output id="garage-summary"></output><ul id="garage-warnings"></ul><p class="field-help">Concept dimensions. Setbacks measure walls; roof overhangs extend a further 1¼ ft.</p><div class="designer-actions"><button id="garage-save">Save design</button><button id="garage-load">Load design</button></div><input id="garage-file" type="file" accept="application/json,.json" hidden><p class="field-help">Save a file to keep your design. Reloading the page clears unsaved work.</p><button id="garage-remove" class="secondary">Remove garage</button></section>`;
+ </section><section><h3>Design summary</h3><output id="garage-summary"></output><ul id="garage-warnings"></ul><p class="field-help">Concept dimensions. Setbacks measure walls; roof overhangs extend a further 1¼ ft.</p><div class="designer-actions"><button id="garage-save">Export design</button><button id="garage-load">Load design</button></div><input id="garage-file" type="file" accept="application/json,.json" hidden><p class="field-help">Changes save automatically on this browser. Export a JSON file to keep a separate copy, then load it on your iPad or computer.</p><button id="garage-remove" class="secondary">Remove garage</button></section>`;
  const fileDialog=document.createElement('dialog');fileDialog.id='garage-file-dialog';fileDialog.innerHTML=`<div class="dialog-head"><span class="eyebrow">GARAGE DESIGN FILE</span><button id="design-file-close" aria-label="Close design file">×</button></div><h2 id="design-file-title">Save your design</h2><p>Download a JSON file, or copy the design text into a file. To restore it, load the file or paste its text here.</p><label for="design-file-text">Design JSON</label><textarea id="design-file-text" rows="10" spellcheck="false"></textarea><p id="design-file-status" role="status"></p><div class="file-actions"><button id="design-download">Download JSON</button><button id="design-copy">Copy text</button><button id="design-apply">Load this design</button><button id="design-browse">Choose file</button></div>`;document.body.append(fileDialog);
  const wallButtons=$('#garage-walls');for(const id of ['front','back','left','right']){const b=document.createElement('button');b.dataset.wall=id;b.onclick=()=>selectWall(id);wallButtons.append(b);}
+ function persist(){
+  const result=store.save(s,ctx.getDisplay(),{phase}),el=$('#garage-autosave');
+  const time=result.savedAt?new Date(result.savedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'';
+  el.dataset.status=result.status;
+  el.textContent=({empty:'Autosave ready · create or load a design.',restored:`Saved design restored · ${time}`,saved:`Saved on this browser · ${time}`,draft:'Finish drawing to save the new footprint.',unavailable:'Browser save unavailable. Export a file to keep your design.',invalid:'Saved data could not be restored. Load a backup or start a new design.', 'invalid-edit':'This edit could not be saved. Your previous save is retained.'})[result.status];
+ }
  function selected(){return s.openings.find(o=>o.id===selectedOpening);}
  function setField(id,value){const el=$(id);if(document.activeElement!==el)el.value=String(value);}
  function sync(){
@@ -81,10 +90,10 @@ export function createGarageDesigner(ctx){
   canvas.style.cursor=editing?(phase!=='idle'?'crosshair':slide?'ew-resize':'pointer'):'';
  }
  function designWarnings(){const drive=drivewayLayout(s),list=[...warnings(s,{shedVisible:getLayer('shed')}),...drive.warnings];if(drive.active&&drive.shedOverlap&&getLayer('shed'))list.push('The driveway overlaps the existing shed.');if(drive.active&&!s.driveway.openFence&&rearPanels.some(p=>p.end>drive.opening.start&&p.start<drive.opening.end&&!s.removedFencePanels.includes(p.id)))list.push('The rear fence is still closed across part of the driveway.');return list;}
- function rebuild(){ctx.invalidateShadows();ctx.updateRearFence(s);view.rebuild(s,{editing,selectedWall,selectedOpening,drawing:phase==='width'||phase==='depth',fenceEditing:editing&&fenceEditing});sync();}
+ function rebuild(){ctx.invalidateShadows();ctx.updateRearFence(s);view.rebuild(s,{editing,selectedWall,selectedOpening,drawing:phase==='width'||phase==='depth',fenceEditing:editing&&fenceEditing});sync();persist();}
  function open(){ctx.showControls();activate();editing=true;message=s.placed?'Select a wall to add doors and windows.':'Set a setback, then tap Draw footprint.';rebuild();if(!s.placed)focusPlan();}
  function close(){taps.reset();if(phase!=='idle')cancel();editing=false;fenceEditing=false;slide=null;setCapture(false);rebuild();}
- function begin(place=false){ctx.revealScene();fenceEditing=false;backup=structuredClone(s);phase=place?'place':'anchor';editing=true;activate();setCapture(true);message='Tap a fence at your starting position. The blue line shows the wall setback.';focusPlan();rebuild();}
+ function begin(place=false){if(phase!=='idle')cancel();ctx.revealScene();fenceEditing=false;backup=structuredClone(s);phase=place?'place':'anchor';editing=true;activate();setCapture(true);message='Tap a fence at your starting position. The blue line shows the wall setback.';focusPlan();rebuild();}
  function cancel(){taps.reset();if(backup)s=backup;backup=null;phase='idle';slide=null;setCapture(false);message='Drawing cancelled. Your previous design is unchanged.';rebuild();}
  function selectWall(id){selectedWall=id;selectedOpening=null;message=`${wallInfo(s,id).name} wall selected. Add a garage door, man door or window.`;rebuild();}
  function addOpening(type){if(!s.placed)return;const existing=type==='garage'?s.openings.find(o=>o.type==='garage'):null;if(existing){existing.wall=selectedWall;selectedOpening=existing.id;message=`Garage door placed on the ${wallInfo(s,selectedWall).name.toLowerCase()} wall.`;rebuild();return;}const o={id:openingId(),wall:selectedWall,type,level:'garage',width:type==='window'?4:type==='door'?3:16,height:type==='window'?3:type==='door'?80/12:8,offset:wallInfo(s,selectedWall).length/FT/2,sill:type==='window'?3:0};s.openings.push(o);selectedOpening=o.id;message=`${type==='door'?'Man door':type==='window'?'Window':'Garage door'} added on the ${wallInfo(s,selectedWall).name.toLowerCase()} wall.`;rebuild();}
@@ -124,9 +133,9 @@ export function createGarageDesigner(ctx){
  $('#opening-position').oninput=e=>{const o=selected();if(o){o.offset=Number(e.target.value);rebuild();}};
  for(const key of ['width','height','sill'])$(`#opening-${key}`).oninput=e=>{const o=selected();if(o&&e.target.value&&e.target.validity.valid){o[key]=Number(e.target.value);rebuild();}};
  $('#opening-level').onchange=e=>{const o=selected();if(o){o.level=e.target.value;rebuild();}};$('#opening-remove').onclick=()=>{s.openings=s.openings.filter(o=>o.id!==selectedOpening);selectedOpening=null;rebuild();};
- $('#garage-remove').onclick=()=>{s.placed=false;s.openings=[];selectedOpening=null;message='Garage removed. Draw another footprint whenever you are ready.';rebuild();};
+ $('#garage-remove').onclick=()=>{if(phase!=='idle')cancel();s.placed=false;s.openings=[];selectedOpening=null;message='Garage removed. Draw another footprint whenever you are ready.';rebuild();};
  function loadText(text){const next=validateDesign(JSON.parse(text));s=next;phase='idle';fenceEditing=false;backup=null;selectedOpening=null;setCapture(false);message='Design loaded.';fileDialog.close();rebuild();focusGarage(s);}
- $('#garage-save').onclick=()=>{$('#design-file-title').textContent='Save your design';$('#design-file-text').value=JSON.stringify(s,null,2);$('#design-file-status').textContent='';fileDialog.showModal();};
+ $('#garage-save').onclick=()=>{$('#design-file-title').textContent='Export your design';$('#design-file-text').value=JSON.stringify(backup??s,null,2);$('#design-file-status').textContent='';fileDialog.showModal();};
  $('#garage-load').onclick=()=>{$('#design-file-title').textContent='Load a design';$('#design-file-text').value='';$('#design-file-status').textContent='';fileDialog.showModal();};
  $('#design-file-close').onclick=()=>fileDialog.close();
  $('#design-download').onclick=()=>{try{const text=$('#design-file-text').value;validateDesign(JSON.parse(text));const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='property-garage-design.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);$('#design-file-status').textContent='Download requested. If your browser does not download files, use Copy text.';}catch(error){$('#design-file-status').textContent=error.message;}};
@@ -136,5 +145,5 @@ export function createGarageDesigner(ctx){
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&editing&&!fileDialog.open){if(phase!=='idle')cancel();else if(slide){slide=null;setCapture(false);}else close();}});
  for(const input of panel.querySelectorAll('input[type="number"]'))input.addEventListener('change',()=>{if(!input.value||!input.validity.valid){message='Enter a value within the field’s minimum and maximum. The previous size is retained.';input.blur();sync();}});
  function getState(){return {editing,phase,selectedWall,selectedOpening,design:structuredClone(s),metrics:garageMetrics(s),warnings:designWarnings(),driveway:drivewayLayout(s),removedRearPanels:removedRearPanels(s),fenceEditing,footprint:s.placed?footprint(s):[]};}
- rebuild();return {open,close,begin,pick,selectWall,addOpening,getState,syncLayers:sync,cancelDrawing:()=>{if(phase!=='idle')cancel();},update:view.update,isCapturing:()=>editing&&(phase!=='idle'||!!slide||fenceEditing),contains:p=>s.placed&&inside(p,footprint(s))};
+ rebuild();return {open,close,begin,pick,selectWall,addOpening,getState,syncLayers:()=>{sync();persist();},cancelDrawing:()=>{if(phase!=='idle')cancel();},update:view.update,isCapturing:()=>editing&&(phase!=='idle'||!!slide||fenceEditing),contains:p=>s.placed&&inside(p,footprint(s))};
 }
