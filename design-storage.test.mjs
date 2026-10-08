@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {newDesign} from './docs/garage-model.js';
 import {createDesignStore,DESIGN_STORAGE_KEY} from './docs/design-storage.js';
+import {publishedGarage,PUBLISHED_GARAGE_ID} from './docs/published-garage.js';
 
 const timestamp='2026-01-01T12:00:00.000Z';
 const display={layers:{shed:false,trees:true,roof:true},labels:false,units:'feet',trees:[{id:'west-tree',enabled:false}]};
@@ -60,4 +61,25 @@ test('invalid edits do not replace the previous save and old designs gain drivew
  const old=garage();delete old.driveway;delete old.removedFencePanels;
  storage.setItem(DESIGN_STORAGE_KEY,JSON.stringify({version:1,savedAt:timestamp,design:old}));
  assert.deepEqual(session(storage).initialize(newDesign(),{}).design.driveway,newDesign().driveway);
+});
+
+test('the published garage loads on a new browser and an older blank baseline',()=>{
+ const storage=memory(),options={publishedId:PUBLISHED_GARAGE_ID};
+ const fresh=session(storage).initialize(publishedGarage(),display,options);
+ assert.equal(fresh.status,'published');assert.equal(fresh.design.width*fresh.design.depth,540);
+ storage.setItem(DESIGN_STORAGE_KEY,JSON.stringify({version:1,savedAt:timestamp,design:newDesign(),display}));
+ const store=session(storage),migrated=store.initialize(publishedGarage(),{},options);
+ assert.deepEqual(migrated.design,publishedGarage());assert.deepEqual(migrated.display,display);
+ store.save({...migrated.design,placed:false,openings:[]},display);
+ assert.equal(session(storage).initialize(publishedGarage(),{},options).design.placed,false);
+});
+
+test('publishing a starting design preserves existing browser work and later edits',()=>{
+ const storage=memory(),previous=session(storage);previous.initialize(newDesign(),{});previous.save(garage(),display);
+ const store=session(storage),options={publishedId:PUBLISHED_GARAGE_ID};
+ assert.deepEqual(store.initialize(publishedGarage(),{},options).design,garage());
+ const edited=publishedGarage();edited.openings[2].offset=12;edited.width=32;
+ store.save(edited,display);
+ assert.deepEqual(session(storage).initialize(publishedGarage(),{},options).design,edited);
+ assert.equal(publishedGarage().width,30);assert.equal(publishedGarage().openings[2].offset,14.289310339917089);
 });

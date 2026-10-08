@@ -1,8 +1,9 @@
 import {createDesignStore} from './design-storage.js';
+import {publishedGarage,PUBLISHED_GARAGE_ID} from './published-garage.js';
 import {createTapTracker} from './pointer-gestures.js';
 import * as THREE from './vendor/three.module.js';
 import {pickSurface} from './scene-tools.js';
-import {FT,newDesign,basis,point,footprint,wallInfo,wallPoint,openingRect,nearestFence,fences,clamp,dot,sub,warnings,validateDesign,inside} from './garage-model.js';
+import {FT,basis,point,footprint,wallInfo,wallPoint,openingRect,nearestFence,fences,clamp,dot,sub,warnings,validateDesign,inside} from './garage-model.js';
 import {drivewayLayout,rearPanels,removedRearPanels} from './driveway-model.js';
 import {garageMetrics} from './garage-clearance.js';
 import {formatFeet} from './scene-tools.js';
@@ -12,13 +13,13 @@ const openingId=()=>globalThis.crypto.randomUUID?.()??Array.from(globalThis.cryp
 
 export function createGarageDesigner(ctx){
  const {scene,canvas,viewport,world,getCamera,activate,focusPlan,focusGarage,setCapture,trees,getLayer,setLayer,getLabelsVisible,setLabels}=ctx;
- const $=s=>document.querySelector(s);let s=newDesign(),editing=false,fenceEditing=false,phase='idle',selectedWall='front',selectedOpening=null,slide=null,backup=null,message='Pick a fence, set your setback, then draw a rectangle.';
+ const $=s=>document.querySelector(s);let s=publishedGarage(),editing=false,fenceEditing=false,phase='idle',selectedWall='front',selectedOpening=null,slide=null,backup=null,message='Pick a fence, set your setback, then draw a rectangle.';
  const store=createDesignStore();
- const restored=store.initialize(s,ctx.getDisplay());s=restored.design;ctx.restoreDisplay(restored.display);
+ const restored=store.initialize(s,ctx.getDisplay(),{publishedId:PUBLISHED_GARAGE_ID});s=restored.design;ctx.restoreDisplay(restored.display);
  const taps=createTapTracker();
  const view=createGarageView(ctx),panel=$('#garage-designer');
  panel.innerHTML=`<div class="designer-heading"><div><span class="eyebrow">BACKYARD PLANNER</span><h2>Design your garage</h2></div><button id="garage-close" aria-label="Close garage designer">×</button></div>
- <p class="designer-intro">Snap to a fence, draw a footprint, then add openings.</p><p id="garage-autosave" class="autosave-status" role="status" aria-live="polite"></p><p class="field-help">Autosave stays on this browser. Export a file for a backup or another device.</p><div class="designer-display"><label><input id="designer-trees" type="checkbox">Trees</label><label><input id="designer-shed" type="checkbox">Shed</label><label><input id="designer-roof" type="checkbox">Roof</label><label><input id="designer-labels" type="checkbox">Labels</label></div>
+ <p class="designer-intro">Snap to a fence, draw a footprint, then add openings.</p><p id="garage-autosave" class="autosave-status" role="status" aria-live="polite"></p><p class="field-help">Autosave stays on this browser. Export a file for a backup or another device.</p><button id="garage-published" class="wide">Load published garage</button><p class="field-help">30 × 18 ft · replaces the current design. Export first to keep another version.</p><div class="designer-display"><label><input id="designer-trees" type="checkbox">Trees</label><label><input id="designer-shed" type="checkbox">Shed</label><label><input id="designer-roof" type="checkbox">Roof</label><label><input id="designer-labels" type="checkbox">Labels</label></div>
  <div id="garage-metrics" class="garage-metrics" aria-live="polite">
  <div><span>Garage footprint</span><output id="design-garage-area">—</output><small>Exterior area · loft excluded</small></div>
  <div><span>Nearest corner → south wall</span><output id="design-house-clearance">—</output><small id="design-corner-detail">Place a garage to measure.</small></div>
@@ -57,7 +58,7 @@ export function createGarageDesigner(ctx){
   const result=store.save(s,ctx.getDisplay(),{phase}),el=$('#garage-autosave');
   const time=result.savedAt?new Date(result.savedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'';
   el.dataset.status=result.status;
-  el.textContent=({empty:'Autosave ready · create or load a design.',restored:`Saved design restored · ${time}`,saved:`Saved on this browser · ${time}`,draft:'Finish drawing to save the new footprint.',unavailable:'Browser save unavailable. Export a file to keep your design.',invalid:'Saved data could not be restored. Load a backup or start a new design.', 'invalid-edit':'This edit could not be saved. Your previous save is retained.'})[result.status];
+  el.textContent=({published:'Published garage loaded · edits save automatically.',empty:'Autosave ready · create or load a design.',restored:`Saved design restored · ${time}`,saved:`Saved on this browser · ${time}`,draft:'Finish drawing to save the new footprint.',unavailable:'Browser save unavailable. Export a file to keep your design.',invalid:'Saved data could not be restored. Load a backup or start a new design.', 'invalid-edit':'This edit could not be saved. Your previous save is retained.'})[result.status];
  }
  function selected(){return s.openings.find(o=>o.id===selectedOpening);}
  function setField(id,value){const el=$(id);if(document.activeElement!==el)el.value=String(value);}
@@ -135,6 +136,7 @@ export function createGarageDesigner(ctx){
  $('#opening-level').onchange=e=>{const o=selected();if(o){o.level=e.target.value;rebuild();}};$('#opening-remove').onclick=()=>{s.openings=s.openings.filter(o=>o.id!==selectedOpening);selectedOpening=null;rebuild();};
  $('#garage-remove').onclick=()=>{if(phase!=='idle')cancel();s.placed=false;s.openings=[];selectedOpening=null;message='Garage removed. Draw another footprint whenever you are ready.';rebuild();};
  function loadText(text){const next=validateDesign(JSON.parse(text));s=next;phase='idle';fenceEditing=false;backup=null;selectedOpening=null;setCapture(false);message='Design loaded.';fileDialog.close();rebuild();focusGarage(s);}
+ $('#garage-published').onclick=()=>{loadText(JSON.stringify(publishedGarage()));message='Published garage loaded. Your later edits will save on this browser.';sync();};
  $('#garage-save').onclick=()=>{$('#design-file-title').textContent='Export your design';$('#design-file-text').value=JSON.stringify(backup??s,null,2);$('#design-file-status').textContent='';fileDialog.showModal();};
  $('#garage-load').onclick=()=>{$('#design-file-title').textContent='Load a design';$('#design-file-text').value='';$('#design-file-status').textContent='';fileDialog.showModal();};
  $('#design-file-close').onclick=()=>fileDialog.close();

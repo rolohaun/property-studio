@@ -29,8 +29,10 @@ const snapshot=(design,display)=>({design:validateDesign(design),display:validat
 // Inject storage access so unavailable storage and failed writes can be tested.
 // Access localStorage lazily: even reading the browser property can throw.
 export function createDesignStore(getStorage=()=>globalThis.localStorage,now=()=>new Date().toISOString()){
- let signature=null,result={status:'empty'};
- function initialize(design,display){
+ let signature=null,result={status:'empty'},publishedId;
+ function initialize(design,display,options={}){
+  publishedId=options.publishedId;
+  result={status:publishedId?'published':'empty'};
   let value=snapshot(design,display),raw;
   try{raw=getStorage().getItem(DESIGN_STORAGE_KEY);}
   catch{result={status:'unavailable'};signature=JSON.stringify(value);return {...value,...result};}
@@ -39,8 +41,16 @@ export function createDesignStore(getStorage=()=>globalThis.localStorage,now=()=
     if(raw.length>MAX_LENGTH)throw new Error('Saved design is too large.');
     const record=JSON.parse(raw);
     if(record.version!==1||typeof record.savedAt!=='string'||!Number.isFinite(Date.parse(record.savedAt)))throw new Error('Invalid saved design.');
-    value=snapshot(record.design,record.display);
-    result={status:'restored',savedAt:record.savedAt};
+    const saved=snapshot(record.design,record.display);
+    // Existing designs take precedence. An old blank baseline can adopt the
+    // newly published garage; a removal saved under this release stays removed.
+    if(publishedId&&record.publishedId!==publishedId&&!saved.design.placed){
+     value.display=saved.display;
+     result={status:'published'};
+    }else{
+     value=saved;
+     result={status:'restored',savedAt:record.savedAt};
+    }
    }catch{result={status:'invalid'};}
   }
   signature=JSON.stringify(value);
@@ -54,7 +64,7 @@ export function createDesignStore(getStorage=()=>globalThis.localStorage,now=()=
   catch{return {status:'invalid-edit'};}
   if(next===signature)return result;
   const savedAt=now();
-  try{getStorage().setItem(DESIGN_STORAGE_KEY,JSON.stringify({version:1,savedAt,...value}));}
+  try{getStorage().setItem(DESIGN_STORAGE_KEY,JSON.stringify({version:1,publishedId,savedAt,...value}));}
   catch{result={status:'unavailable'};return result;}
   signature=next;result={status:'saved',savedAt};return result;
  }

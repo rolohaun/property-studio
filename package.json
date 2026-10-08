@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server.mjs",
-    "check": "node --check server.mjs && node --check docs/app.js && node --check docs/driveway-model.js && node --check docs/garage-clearance.js && node --check docs/garage-designer.js && node --check docs/garage-model.js && node --check docs/garage-view.js && node --check docs/house-roof.js && node --check docs/landscape.js && node --check docs/measurements.js && node --check docs/model-details.js && node --check docs/pointer-gestures.js && node --check docs/rear-layout.js && node --check docs/scene-tools.js && node --check docs/shed-layout.js && node --check docs/survey.js && node --check docs/design-storage.js",
+    "check": "node --check server.mjs && node --check docs/app.js && node --check docs/driveway-model.js && node --check docs/garage-clearance.js && node --check docs/garage-designer.js && node --check docs/garage-model.js && node --check docs/garage-view.js && node --check docs/house-roof.js && node --check docs/landscape.js && node --check docs/measurements.js && node --check docs/model-details.js && node --check docs/pointer-gestures.js && node --check docs/rear-layout.js && node --check docs/scene-tools.js && node --check docs/shed-layout.js && node --check docs/survey.js && node --check docs/design-storage.js && node --check docs/published-garage.js",
     "test": "node --test planner.test.mjs pointer-gestures.test.mjs design-storage.test.mjs"
   }
 }

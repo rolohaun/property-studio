@@ -12,6 +12,10 @@ A browser-based Three.js property viewer and backyard garage planner. Works with
 - Automatically save and restore the current garage design on the same browser.
 - Export and load garage designs as JSON files for backups and other devices.
 
+## Published garage
+
+The site starts with a 30 × 18 ft (540 sq ft) garage, 9 ft garage walls, a 7 ft loft, three openings, and the driveway. Its exact placement and opening positions are stored in `docs/published-garage.js`. Existing browser designs still restore automatically. An older empty baseline adopts the published garage; later removals remain saved. Choose **Load published garage** in the designer to return to this starting point. Export your current design first if you want to keep a separate version.
+
 ## Run locally
 
 Install Node.js, then run `npm run dev`. Open the local URL printed in the terminal. No package installation or build step is needed; Three.js is vendored in `docs/vendor`.
