@@ -1,0 +1,12 @@
+export const rearLayout={eastWall:13.518,doorWidth:1.06,cornerGap:.3048,doorWindowGap:2.54,upperGlassWidth:1.10,trim:.14};
+rearLayout.doorRight=rearLayout.eastWall-rearLayout.cornerGap;
+rearLayout.doorLeft=rearLayout.doorRight-rearLayout.doorWidth;
+rearLayout.doorCenter=(rearLayout.doorLeft+rearLayout.doorRight)/2;
+rearLayout.upperRight=rearLayout.doorLeft-rearLayout.doorWindowGap;
+rearLayout.upperLeft=rearLayout.upperRight-rearLayout.upperGlassWidth-rearLayout.trim;
+rearLayout.upperCenter=(rearLayout.upperLeft+rearLayout.upperRight)/2;
+rearLayout.basementCenter=rearLayout.upperCenter-.03;
+rearLayout.treeCenter=rearLayout.upperLeft-1.32+.15;
+rearLayout.patio={width:16.5*.3048,depth:11.5*.3048,east:rearLayout.eastWall,front:17.964};
+rearLayout.patio.west=rearLayout.patio.east-rearLayout.patio.width;
+rearLayout.patio.back=rearLayout.patio.front+rearLayout.patio.depth;

@@ -1,0 +1,38 @@
+/* Keep the model in view as Safari's browser bars and the iPad keyboard resize. */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);height:100vh;height:100dvh}
+.header{flex-shrink:0}.header .quiet-button{margin-left:0}.controls-toggle{margin-left:auto;white-space:nowrap;background:#e2eaee;color:#2b4653;border-radius:6px;padding:10px 14px;min-height:44px;font-size:14px}
+main{height:auto;flex:1;min-height:0;position:relative}.sidebar{min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.workspace{min-height:0}
+.sidebar-scrim{display:none}#viewport,canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+dialog{overflow-y:auto;overscroll-behavior:contain}.touch-input button,.touch-input label{touch-action:manipulation}
+#draw-hint{position:absolute;bottom:68px;left:24px;right:88px;display:flex;align-items:center;gap:16px;padding:12px 16px;color:#fff;background:#213e4ff2;border-radius:8px;font-size:14px;line-height:1.5;pointer-events:none;z-index:3}#draw-hint span{flex:1}#draw-hint button{pointer-events:auto;background:#e8a06d;color:#21343e;border-radius:5px;min-height:44px;padding:8px 14px}
+#render-status{position:absolute;inset:0;display:grid;place-content:center;padding:30px;background:#e6edefe8;z-index:8;color:#2c4654;text-align:center;line-height:1.6}
+.walking .scene-tool-bar,.walking .garage-toggle,.walking .view-tools{display:none}
+@media(max-width:1000px){
+ .header{height:64px;padding:0 18px;gap:12px}.project-name{display:none}.brand{font-size:12px;letter-spacing:1px}.brand-icon{margin-right:3px}
+ main{flex-direction:row}.workspace,.designing .workspace{height:auto;min-height:0;flex:1;order:0}
+ .sidebar,.designing .sidebar{position:absolute;top:0;bottom:0;left:0;width:min(360px,calc(100% - 48px));z-index:12;display:block;overflow-y:auto;padding:22px;box-shadow:10px 0 40px #14283544}
+ .sidebar-scrim{position:absolute;inset:0;display:block;z-index:11;background:#10283144}
+ #baseline-controls{display:block}.project-heading{display:block}.sidebar section{margin-top:22px;padding-top:18px;border-top:1px solid #ffffff18}.sidebar-foot{display:none}
+ .survey-stats dl,.area-estimates dl{display:block}.area-estimates dl>div{flex-direction:row}.layers{gap:4px}.layers label{font-size:14px}
+ .view-button{font-size:13px}.walk-button{font-size:14px}.section-heading h2{font-size:14px}.units-control button{font-size:14px}
+ .garage-metrics{position:static}.scene-title,.designing .scene-title{top:18px;left:20px;padding:0;background:none}.scene-title .eyebrow{display:none}.scene-title h2,.designing .scene-title h2{font-size:24px;margin:0;max-width:calc(100vw - 120px)}.scene-title p{display:none}
+ .scene-tool-bar,.designing .scene-tool-bar{top:64px;left:20px;right:auto}.garage-toggle,.designing .garage-toggle{top:126px;left:20px}
+ .compass{top:18px;right:20px}.compass>span:last-child{display:none}.tool-panel{bottom:65px;left:20px;max-height:50%;overflow-y:auto;width:min(320px,calc(100% - 100px))}
+}
+@media(any-pointer:coarse),(max-width:1400px){
+ button,.view-tools button,.scene-tool-bar button,.walk-pad button,#garage-designer button,.dialog-head button{min-height:44px;min-width:44px}
+ .layers label,.tree-switch{min-height:44px}.layers{gap:4px}.walk-button{padding:14px 0}.view-tools{right:16px}
+ #garage-designer input,#garage-designer select,.tool-panel select,#garage-file-dialog textarea{font-size:16px;min-height:44px}
+ #garage-designer .designer-display label{min-height:44px}#garage-designer .designer-display input,#garage-designer .inline-check input{min-height:22px;width:22px;height:22px}
+ input[role=switch]{width:40px;height:24px}input[role=switch]:before{width:18px;height:18px}input[role=switch]:checked:before{transform:translateX(16px)}
+ #garage-designer input[type=range]{height:44px;touch-action:pan-y}.walk-pad button{width:54px;height:54px;font-size:26px}
+ #walk-guide{width:360px;padding:14px;left:20px;transform:none;bottom:72px;max-width:calc(100% - 40px)}#walk-guide>span{font-size:14px}#walk-guide strong{font-size:14px}
+ .touch-input #orbit-instructions{font-size:12px}.tool-actions button{font-size:14px}.scene-tool-bar button{font-size:14px}.garage-toggle{min-height:44px}
+}
+@media(max-height:800px){.garage-metrics{position:static}}
+@media(max-width:500px){
+ .header{height:60px;padding:0 10px;gap:8px}.brand{font-size:10px}.brand-icon{width:26px;height:26px;font-size:22px}.controls-toggle{font-size:12px;padding:8px}.quiet-button{font-size:11px}.quiet-button span{display:none}
+ .scene-title h2,.designing .scene-title h2{font-size:21px}.scene-tool-bar button{font-size:12px;padding:9px}.bottom-bar{padding:0 12px}.legend{font-size:10px;gap:10px}
+ #draw-hint{left:12px;right:12px;font-size:13px;padding:10px;bottom:55px}.tool-panel{left:12px;bottom:55px}.garage-metrics output{font-size:25px}
+}

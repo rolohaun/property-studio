@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Explore a 3D property model and design a backyard garage.">
+  <title>Property Studio — Your baseline</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231e2930'/%3E%3Cpath d='M7 16 16 8l9 8v9H7Z' fill='none' stroke='%23f7a76c' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./garage.css"><link rel="stylesheet" href="./tablet.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js"}}</script>
+</head>
+<body>
+  <header class="header"><div class="brand"><span class="brand-icon">⌂</span> PROPERTY <strong>STUDIO</strong></div><div class="project-name">Property planner <span>/</span> Your baseline</div><button id="controls-toggle" class="controls-toggle" aria-controls="property-controls" aria-expanded="true">Hide controls</button><button id="info-button" class="quiet-button">About this model <span>ⓘ</span></button></header>
+  <main>
+    <button id="sidebar-scrim" class="sidebar-scrim" aria-label="Close controls" hidden></button><aside class="sidebar" id="property-controls" aria-label="Property controls"><div id="baseline-controls">
+      <div class="project-heading"><span class="eyebrow">EXISTING PROPERTY</span><h1>A place to plan.</h1><p>Example property<br>Garage design workspace</p><span class="version">GARAGE DESIGNER</span></div>
+      <section><div class="section-heading"><h2>View your property</h2><span>01</span></div><div class="view-buttons"><button class="view-button active" data-view="overview" aria-pressed="true"><span>◇</span> Perspective</button><button class="view-button" data-view="plan" aria-pressed="false"><span>▱</span> Site plan</button><button class="view-button" data-view="front" aria-pressed="false"><span>⌂</span> Front</button><button class="view-button" data-view="backyard" aria-pressed="false"><span>▧</span> Backyard</button></div><button id="walk-button" class="walk-button"><span>◎</span> Explore at ground level</button></section>
+      <section><div class="section-heading"><h2>Visible layers</h2><span>02</span></div><div class="layers">
+        <label><span><i class="swatch dim"></i>All scene labels</span><input id="labels-toggle" type="checkbox" checked role="switch"></label>
+        <label><span><i class="swatch roof"></i>Roof</span><input id="roof-toggle" type="checkbox" checked role="switch"></label>
+        <label><span><i class="swatch fence"></i>Existing fence</span><input id="fence-toggle" type="checkbox" checked role="switch"></label>
+        <label><span><i class="swatch"></i>Existing shed</span><input id="shed-toggle" type="checkbox" checked role="switch"></label>
+        <label><span><i class="swatch dim"></i>Measurements</span><input id="dimensions-toggle" type="checkbox" checked role="switch"></label>
+        <label><span><i class="swatch grid"></i><span id="grid-label">1 metre grid</span></span><input id="grid-toggle" type="checkbox" role="switch"></label>
+        <label><span><i class="swatch tree"></i>Trees & planting</span><input id="trees-toggle" type="checkbox" checked role="switch"></label>
+      </div><div class="units-control" role="group" aria-label="Display units"><button data-unit="metres" aria-pressed="true" class="active">Metres</button><button data-unit="feet" aria-pressed="false">Feet</button></div></section>
+      <section class="survey-stats"><div class="section-heading"><h2>Model dimensions</h2><span>03</span></div><dl><div><dt>Rear boundary</dt><dd data-metres="30.48">30.48 m</dd></div><div><dt>West boundary</dt><dd data-metres="37.88">37.88 m</dd></div><div><dt>East boundary</dt><dd data-metres="32.32">32.32 m</dd></div><div><dt>Curved frontage</dt><dd data-metres="10.40">10.40 m</dd></div></dl><button id="source-button" class="text-button">View model notes <span>↗</span></button></section>
+      <section class="area-estimates"><div class="section-heading"><h2>Estimated floor areas</h2><span>04</span></div><dl><div><dt>Home · main floor</dt><dd id="home-area"></dd></div><div><dt>Attached garage</dt><dd id="garage-area"></dd></div></dl><p>Exterior footprints. Home excludes garage and basement; garage division is approximate.</p><div id="alternate-areas"></div></section>
+      <div class="sidebar-foot"><span class="metre-symbol" id="unit-symbol">m</span><p><span id="unit-note">Dimensions in metres.</span><br><span>Single-story · north-facing frontage</span></p></div>
+    </div><div id="garage-designer" hidden></div></aside>
+    <div class="workspace">
+      <div id="viewport" role="application" aria-label="Interactive 3D property. Drag to orbit, right drag to pan, scroll to zoom." tabindex="0"><div id="labels" aria-hidden="true"></div></div>
+      <div class="scene-title"><span class="eyebrow">YOUR PROPERTY, IN CONTEXT</span><h2 id="view-title">The whole picture.</h2><p id="view-description">A measured starting point for what comes next.</p></div>
+      <button id="garage-toggle" class="garage-toggle" aria-pressed="false">Design a garage</button><div class="scene-tool-bar" role="group" aria-label="Scene tools"><button data-tool="navigate" class="active" aria-pressed="true">Move view</button><button data-tool="measure" aria-pressed="false">Measure distance</button><button data-tool="trees" aria-pressed="false">Select trees</button></div>
+      <div id="measure-panel" class="tool-panel" hidden><span class="eyebrow">TWO-POINT MEASUREMENT</span><p id="measure-status" aria-live="polite">Click the first surface.</p><output id="measure-result" aria-live="polite">—</output><p class="tool-help">Straight 3D distance in feet. Drag to orbit; click to place points. A third click starts a new measurement.</p><div class="tool-actions"><button id="measure-undo">Undo point</button><button id="measure-clear">Clear</button></div></div>
+      <div id="tree-panel" class="tool-panel" hidden><span class="eyebrow">INDIVIDUAL TREES</span><p id="tree-status" aria-live="polite">Click a tree, or choose one below.</p><label class="sr-only" for="tree-select">Select a tree</label><select id="tree-select"><option value="">Choose a tree…</option></select><label class="tree-switch"><span>Tree enabled</span><input id="tree-enabled" type="checkbox" role="switch" disabled></label><p class="tool-help">Hidden trees leave an amber marker here. Click a marker or use the list to restore a tree.</p><div class="tool-actions"><button id="trees-restore">Show all trees</button><span id="tree-hidden-count">0 hidden</span></div></div>
+      <div class="compass" title="North-up model coordinates"><span class="north-letter">N</span><svg id="compass-arrow" width="42" height="42" viewBox="0 0 42 42"><path d="M21 4 29 34 21 28 13 34Z" fill="#314c5b"/><path d="M21 4V28L13 34Z" fill="#e0e9ec"/></svg><span>TRUE NORTH</span></div>
+      <div class="view-tools"><button id="zoom-in" aria-label="Zoom in">＋</button><button id="zoom-out" aria-label="Zoom out">−</button><span></span><button id="reset-button" aria-label="Reset view">⟲</button></div>
+      <div id="draw-hint" hidden><span id="draw-hint-text" role="status"></span><button id="draw-hint-cancel">Cancel</button></div><div id="render-status" role="status" hidden>Restoring the 3D view… Your current design is still here.</div><div id="crosshair" hidden aria-hidden="true">+</div><div id="walk-guide" hidden><strong id="walk-state" aria-live="polite">First-person view</strong><span id="walk-instructions">Move mouse to look · W A S D to walk · Shift to go faster · Esc to release mouse</span><button id="resume-walk" hidden>Resume mouse control</button><div class="walk-pad"><button data-move="forward" aria-label="Walk forward">↑</button><button data-move="left" aria-label="Walk left">←</button><button data-move="back" aria-label="Walk backward">↓</button><button data-move="right" aria-label="Walk right">→</button></div><button id="exit-walk">Exit ground view</button></div>
+      <div id="loading" class="loading">Building your property…</div>
+      <div class="bottom-bar"><div class="legend"><span><i class="legend-dot"></i>Building footprint</span><span><i class="legend-line"></i>Property line</span></div><div class="instructions" id="orbit-instructions">Drag to orbit <b>·</b> Right-drag to pan <b>·</b> Scroll to zoom</div><div class="scale"><div id="scale-line"></div><span id="scale-text">5 m</span></div></div>
+    </div>
+  </main>
+  <dialog id="notes"><div class="dialog-head"><span class="eyebrow">ABOUT PROPERTY STUDIO</span><button id="close-notes" aria-label="Close model notes">×</button></div><h2>Explore and plan in 3D.</h2><p>All dimensions describe this demonstration model. One scene unit equals one metre. This is a concept planner, not a survey or a permit drawing.</p><div class="note-block"><h3>Garage design</h3><p>Choose a fence, set a wall setback, and tap to draw the garage width and depth. Edit the garage and loft heights, add doors or windows, and position openings with their sliders. The driveway can connect a garage door to the rear alley and remove intersecting fence panels.</p><h3>Measurements</h3><p>Area uses the exterior footprint and excludes the loft. House clearance is a horizontal wall-to-wall measurement. Roof overhangs are excluded. The 10 ft spacing target is a planning preference, not a verified zoning requirement.</p><h3>Touch controls</h3><p>Drag to orbit. Use two fingers to pan and pinch to zoom. In plan view, drag to pan; two fingers work while drawing. Open Controls for dimensions and layers. At ground level, drag to look and hold an arrow to walk.</p><h3>Keep your work</h3><p>Save a design as JSON and load it later. Edits remain in the current browser session until you save them. No account, analytics or upload service is included.</p></div></dialog>
+  <script>
+    if (!HTMLScriptElement.supports?.('importmap')) {
+      const loading = document.getElementById('loading');
+      loading.textContent = 'Please update your iPad to iPadOS 16.4 or newer, then open this page in Safari.';
+      loading.classList.add('error');
+    }
+  </script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
