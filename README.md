@@ -2,6 +2,8 @@
 
 A browser-based Three.js property viewer and backyard garage planner. Works with mouse, keyboard, and touch controls.
 
+**[Open Property Studio](https://rolohaun.github.io/property-studio/)** — no account or password required.
+
 - Orbit, plan, and ground-level views.
 - Editable garage footprint, wall and loft heights, roof, doors, and windows.
 - Garage area and distance to the house, in feet.
